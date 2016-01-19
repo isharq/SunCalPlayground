@@ -2,28 +2,32 @@
 /*
 Source:
 Almanac for Computers, 1990
-    published by Nautical Almanac Office
+published by Nautical Almanac Office
 United States Naval Observatory
 Washington, DC 20392
 
 Inputs:
 day, month, year:      date of sunrise/sunset
 latitude, longitude:   location for sunrise/sunset
-    zenith:                Sun's zenith for sunrise/sunset
-        offical      = 90 degrees 50'
+zenith:                Sun's zenith for sunrise/sunset
+offical      = 90 degrees 50'
 civil        = 96 degrees
 nautical     = 102 degrees
 astronomical = 108 degrees
 
 NOTE: longitude is positive for East and negative for West
-    NOTE: the algorithm assumes the use of a calculator with the
+NOTE: the algorithm assumes the use of a calculator with the
 trig functions in "degree" (rather than "radian") mode. Most
 programming languages assume radian arguments, requiring back
 and forth convertions. The factor is 180/pi. So, for instance,
-    the equation RA = atan(0.91764 * tan(L)) would be coded as RA
+the equation RA = atan(0.91764 * tan(L)) would be coded as RA
 = (180/pi)*atan(0.91764 * tan((pi/180)*L)) to give a degree
 answer with a degree input for L.
 */
+
+// originally based on https://github.com/PaulWoodIII/SunCalPlayground
+
+// Updated to work in the Xcode 7.3 playground w/ Swift 2.1 by Haje 2016-01-19
 
 import UIKit
 import Foundation
@@ -86,10 +90,10 @@ func normalize_range(v: Double, max: Double) -> Double
     }
     
     return variable;
-//    var variable : Double = abs(v);
-//    let modulous : Double = v % max
-//    var variable : Double = abs(modulous)
-//    return variable;
+    //    var variable : Double = abs(v);
+    //    let modulous : Double = v % max
+    //    var variable : Double = abs(modulous)
+    //    return variable;
 }
 
 let inDate = NSDate()
@@ -101,7 +105,7 @@ let calendar = NSCalendar(calendarIdentifier: NSCalendarIdentifierGregorian)!
 
 let zenith = 90.0
 
-let components = calendar.components(.CalendarUnitYear | .CalendarUnitMonth | .CalendarUnitDay | .CalendarUnitTimeZone , fromDate: inDate)
+let components = calendar.components([.Year, .Month, .Day, .TimeZone] , fromDate: inDate)
 
 //    1. first calculate the day of the year
 //
@@ -117,8 +121,18 @@ let N = N1 - (N2 * N3) + Double(components.day) - 30.0
 //let N : Double = Double(components.day) + (((153.0 * m) + 2.0) / 5.0) + (365.0 * y) + (y/4.0) - (y/100.0) + (y/400.0) - 32045.0;
 //
 //println("Julian Date: \(N)\n")
-let latitude = 31.20012844
-let longitude = 121.46589285
+
+// Somewhere in China
+// let latitude = 31.20012844
+// let longitude = 121.46589285
+
+// London
+let latitude = 51.5
+let longitude = 0.0
+
+// San Francisco
+// let latitude = 37.7
+// let longitude = -122.4
 
 //2. convert the longitude to hour value and calculate an approximate time
 //
@@ -156,7 +170,7 @@ let M = (0.9856 * t) - 3.289
 //
 
 var L : Double = M + (1.916 * deg_sin(M)) + (0.020 * deg_sin(2 * M)) + 282.634;
-L = normalize_range(L, 360);
+L = normalize_range(L, max: 360);
 
 //5a. calculate the Sun's right ascension
 //
@@ -165,7 +179,7 @@ L = normalize_range(L, 360);
 //
 
 var RA : Double = deg_atan(0.91764 * deg_tan(L));
-RA = normalize_range(RA, 360);
+RA = normalize_range(RA, max: 360);
 
 //5b. right ascension value needs to be in the same quadrant as L
 //
@@ -200,11 +214,11 @@ let cosH = (deg_cos(zenith) - (sinDec * deg_sin(latitude))) / (cosDec * deg_cos(
 //
 
 if(cosH > 1.0){
-    println("Will not rise in this location!")
+    print("Will not rise in this location!")
 }
 
 if(cosH < -1.0){
-    println("Will not set in this location!")
+    print("Will not set in this location!")
 }
 
 //SKIPPED!
@@ -243,7 +257,7 @@ let T = H + RA - (0.06571 * t) - 6.622;
 //UT = T - lngHour
 //NOTE: UT potentially needs to be adjusted into the range [0,24) by adding/subtracting 24
 //
-let UT = normalize_range(T - lngHour, 24.0);
+let UT = normalize_range(T - lngHour, max: 24.0);
 
 
 
