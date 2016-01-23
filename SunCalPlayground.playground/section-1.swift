@@ -28,6 +28,7 @@ answer with a degree input for L.
 // originally based on https://github.com/PaulWoodIII/SunCalPlayground
 
 // Updated to work in the Xcode 7.3 playground w/ Swift 2.1 by Haje 2016-01-19
+// Checked all the code step by step. Found to be working 2016-01-20
 
 import UIKit
 import Foundation
@@ -98,12 +99,17 @@ func normalize_range(v: Double, max: Double) -> Double
 
 let inDate = NSDate()
 
-let event = SunEvent.SunEventSet
+// SunRise below
+let event = SunEvent.SunEventRise
+
+// SunSet Below
+//let event = SunEvent.SunEventRise
+//
 
 // calculation of Julian Day Number (http://en.wikipedia.org/wiki/Julian_day ) from Gregorian Date
 let calendar = NSCalendar(calendarIdentifier: NSCalendarIdentifierGregorian)!
 
-let zenith = 90.0
+let zenith : Double = 90.833
 
 let components = calendar.components([.Year, .Month, .Day, .TimeZone] , fromDate: inDate)
 
@@ -113,14 +119,6 @@ let N1 = floor(275.0 * Double(components.month) / 9.0)
 let N2 = floor((Double(components.month) + 9.0) / 12.0)
 let N3 = (1.0 + floor((Double(components.year) - 4.0 * floor(Double(components.year) / 4.0) + 2.0) / 3.0))
 let N = N1 - (N2 * N3) + Double(components.day) - 30.0
-//
-
-//let a = (14.0 - Double(components.month)) / 12.0;
-//let y : Double = Double(components.year) +  4800.0 - a;
-//let m : Double = Double(components.month) + (12.0 * a) - 3.0;
-//let N : Double = Double(components.day) + (((153.0 * m) + 2.0) / 5.0) + (365.0 * y) + (y/4.0) - (y/100.0) + (y/400.0) - 32045.0;
-//
-//println("Julian Date: \(N)\n")
 
 // Somewhere in China
 // let latitude = 31.20012844
@@ -129,6 +127,10 @@ let N = N1 - (N2 * N3) + Double(components.day) - 30.0
 // London
 let latitude = 51.5
 let longitude = 0.0
+
+// Example Math from http://williams.best.vwh.net/sunrise_sunset_example.htm  to check algos.
+//let latitude = 40.9
+//let longitude = -74.3
 
 // San Francisco
 // let latitude = 37.7
@@ -146,6 +148,7 @@ let longitude = 0.0
 
 let lngHour : Double = longitude / 15.0
 
+
 var t : Double
 if(event == SunEvent.SunEventRise){
     t = N + ((6.0 - lngHour) / 24.0)
@@ -162,7 +165,6 @@ else{
 let M = (0.9856 * t) - 3.289
 
 
-//
 //4. calculate the Sun's true longitude
 //
 //L = M + (1.916 * sin(M)) + (0.020 * sin(2 * M)) + 282.634
@@ -171,6 +173,7 @@ let M = (0.9856 * t) - 3.289
 
 var L : Double = M + (1.916 * deg_sin(M)) + (0.020 * deg_sin(2 * M)) + 282.634;
 L = normalize_range(L, max: 360);
+
 
 //5a. calculate the Sun's right ascension
 //
@@ -181,16 +184,18 @@ L = normalize_range(L, max: 360);
 var RA : Double = deg_atan(0.91764 * deg_tan(L));
 RA = normalize_range(RA, max: 360);
 
+
 //5b. right ascension value needs to be in the same quadrant as L
 //
 let Lquadrant  = (floor( L/90.0)) * 90.0
 let RAquadrant = (floor(RA/90.0)) * 90.0
 RA = RA + (Lquadrant - RAquadrant)
-//
+
 //5c. right ascension value needs to be converted into hours
 //
 RA = RA / 15.0
-//
+
+
 //6. calculate the Sun's declination
 //
 //sinDec = 0.39782 * sin(L)
@@ -199,19 +204,17 @@ RA = RA / 15.0
 let sinDec = 0.39782 * deg_sin(L);
 let cosDec = deg_cos(deg_asin(sinDec));
 
-//
+
 //7a. calculate the Sun's local hour angle
 //
 //cosH = (cos(zenith) - (sinDec * sin(latitude))) / (cosDec * cos(latitude))
 //
-let cosH = (deg_cos(zenith) - (sinDec * deg_sin(latitude))) / (cosDec * deg_cos(latitude));
-
+var cosH : Double = (deg_cos(zenith) - (sinDec * deg_sin(latitude))) / (cosDec * deg_cos(latitude));
 
 //if (cosH >  1)
 //the sun never rises on this location (on the specified date)
 //if (cosH < -1)
 //the sun never sets on this location (on the specified date)
-//
 
 if(cosH > 1.0){
     print("Will not rise in this location!")
@@ -221,8 +224,6 @@ if(cosH < -1.0){
     print("Will not set in this location!")
 }
 
-//SKIPPED!
-
 //7b. finish calculating H and convert into hours
 //
 //if if rising time is desired:
@@ -231,7 +232,6 @@ if(cosH < -1.0){
 //H = acos(cosH)
 //
 //H = H / 15
-//
 
 var H : Double;
 
@@ -247,7 +247,6 @@ H = H / 15.0;
 //8. calculate local mean time of rising/setting
 //
 //T = H + RA - (0.06571 * t) - 6.622
-//
 
 let T = H + RA - (0.06571 * t) - 6.622;
 
@@ -258,7 +257,6 @@ let T = H + RA - (0.06571 * t) - 6.622;
 //NOTE: UT potentially needs to be adjusted into the range [0,24) by adding/subtracting 24
 //
 let UT = normalize_range(T - lngHour, max: 24.0);
-
 
 
 //10. convert UT value to local time zone of latitude/longitude
@@ -279,8 +277,4 @@ components.hour = Int(hour)
 components.minute = Int( minute)
 components.second = Int(second)
 
-
 let sunset = calendar.dateFromComponents(components)
-
-
-
